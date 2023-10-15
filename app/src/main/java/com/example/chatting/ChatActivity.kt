@@ -32,6 +32,77 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
+       // val intent = Intent()
+        val name = intent.getStringExtra("name")
+        val receiverUid = intent.getStringExtra("uid")
+
+        val senderUid = FirebaseAuth.getInstance().currentUser?.uid
+        mDbRef = FirebaseDatabase.getInstance().getReference()
+
+        senderRoom = receiverUid + senderUid
+        senderRoom = receiverUid + senderUid
+
+        receiverRoom = senderUid + receiverUid
+
+        supportActionBar?.title = name
+
+        chatRecyclerView = findViewById(R.id.chatRecyclerView)
+        messageBox = findViewById(R.id.messageBox)
+        sendButton = findViewById(R.id.sentButton)
+
+        messageList = ArrayList()
+        messageAdapter = MessageAdapter(this,messageList)
+
+        chatRecyclerView.layoutManager = LinearLayoutManager(this)
+        chatRecyclerView.adapter = messageAdapter
+
+        // Adding data Recycler view
+        mDbRef.child("chats").child(senderRoom!!).child("messages")
+            .addValueEventListener(object: ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+
+                    messageList.clear()
+
+                    for (postSnapshot in snapshot.children){
+
+                        val message = postSnapshot.getValue(Message::class.java)
+                        messageList.add(message!!)
+
+                    }
+
+                    messageAdapter.notifyDataSetChanged()
+
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    TODO("Not yet implemented")
+                }
+
+            })
+
+
+        // adding the mess to database
+        sendButton.setOnClickListener {
+
+            val message = messageBox.text.toString()
+            val messObject = Message(message, senderUid)
+
+            mDbRef.child("chats").child(senderRoom!!)
+                .child("messages").push()
+                .setValue(messObject)
+
+                .addOnSuccessListener {
+
+                    mDbRef.child("chats").child(receiverRoom!!)
+                        .child("messages").push()
+                        .setValue(messObject)
+
+                }
+            messageBox.setText("")
+        }
+
+
+
 
     }
 }
